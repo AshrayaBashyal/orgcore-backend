@@ -7,7 +7,7 @@ class RegisterSerializer(serializers.Serializer):
     email=serializers.EmailField()
     password=serializers.CharField(min_length=6, write_only=True)
 
-    def create_user(self, validated_data):
+    def create(self, validated_data):
         email = self.validated_data["email"].lower()
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError("Email already registered!")
@@ -19,7 +19,7 @@ class RegisterSerializer(serializers.Serializer):
         return user
     
 
-class ProfileSerializer(serializers.Serializer):
+class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("id", "email", "date_joined")

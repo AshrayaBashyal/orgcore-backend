@@ -33,3 +33,21 @@ class CompanyMember(models.Model):
 
     def __str__(self):
         return f"{self.user.email} → {self.company.name} ({self.role})"
+
+
+import uuid
+
+class ComapnyInvite(models.Model):
+    email = models.EmailField()
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=CompanyMember.ROLES_CHOICES)
+
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("email", "company")
+
+    def __str__(self):
+        return f"Invite {self.email} → {self.company.name}"

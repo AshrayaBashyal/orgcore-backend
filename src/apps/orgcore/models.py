@@ -37,10 +37,10 @@ class CompanyMember(models.Model):
 
 import uuid
 
-class ComapnyInvite(models.Model):
+class CompanyInvite(models.Model):
     email = models.EmailField()
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    role = models.CharField(max_length=20, choices=CompanyMember.ROLES_CHOICES)
+    role = models.CharField(max_length=20, choices=CompanyMember.ROLE_CHOICES)
 
     token = models.UUIDField(default=uuid.uuid4, unique=True)
     is_accepted = models.BooleanField(default=False)

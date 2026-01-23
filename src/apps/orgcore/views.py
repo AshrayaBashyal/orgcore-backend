@@ -26,7 +26,7 @@ class CompanyCreateView(APIView):
         return Response({"id": company.id, "name": company.name})
     
 
-class InviteCreateVew(APIView):
+class InviteCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, company_id):
@@ -43,3 +43,4 @@ class InviteCreateVew(APIView):
 
         return Response({"invite_id": invite.id})
     
+

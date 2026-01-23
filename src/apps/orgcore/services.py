@@ -3,17 +3,23 @@ from django.contrib.auth.models import User
 from .models import Company, CompanyMember, CompanyInvite
 
 
+def require_admin(company, user):
+    if not CompanyMember.objects.filter(
+        company=company,
+        user=user,
+        role=CompanyMember.ADMIN
+    ).exists():
+        raise PermissionDenied("Admin privileges required")
+
+
 class CompanyService:
 
     @staticmethod
     def create_company(owner, name, description=""):
-        if Company.objects.filter(name=name).exists():
-            raise ValidationError("Company with this name already exists")
-
         company = Company.objects.create(
-            owner=owner,
             name=name,
-            description = description
+            description=description,
+            owner=owner
         )
 
         CompanyMember.objects.create(
@@ -22,18 +28,20 @@ class CompanyService:
             role=CompanyMember.ADMIN
         )
 
+        return company
 
     @staticmethod
     def invite_member(company, inviter, email, role):
-        if not CompanyMember.objects.filter(
-            user=inviter,
+        require_admin(company, inviter)
+
+        if CompanyMember.objects.filter(
             company=company,
-            role=CompanyMember.ADMIN
+            user__email=email
         ).exists():
-            raise PermissionDenied("Only admins can invite members")
+            raise ValidationError("User already in company")
 
         invite, created = CompanyInvite.objects.get_or_create(
-            email=email,
+            email=email.lower(),
             company=company,
             defaults={"role": role}
         )
@@ -41,5 +49,39 @@ class CompanyService:
         if not created:
             raise ValidationError("Invite already exists")
 
-        # send email async later (Celery)
         return invite
+
+    @staticmethod
+    def cancel_invite(company, inviter, invite_id):
+        require_admin(company, inviter)
+
+        invite = CompanyInvite.objects.get(
+            id=invite_id,
+            company=company,
+            is_accepted=False
+        )
+        invite.delete()
+
+    @staticmethod
+    def accept_invite(user, token):
+        invite = CompanyInvite.objects.filter(
+            token=token,
+            is_accepted=False
+        ).first()
+
+        if not invite:
+            raise ValidationError("Invalid invite")
+
+        if invite.email.lower() != user.email.lower():
+            raise PermissionDenied("Invite not for this user")
+
+        CompanyMember.objects.create(
+            user=user,
+            company=invite.company,
+            role=invite.role
+        )
+
+        invite.is_accepted = True
+        invite.save()
+
+        return invite.company

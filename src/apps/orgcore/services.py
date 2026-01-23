@@ -23,5 +23,23 @@ class CompanyService:
         )
 
 
+    @staticmethod
+    def invite_member(company, inviter, email, role):
+        if not CompanyMember.objects.filter(
+            user=inviter,
+            company=company,
+            role=CompanyMember.ADMIN
+        ).exists():
+            raise PermissionDenied("Only admins can invite members")
 
-        
+        invite, created = CompanyInvite.objects.get_or_create(
+            email=email,
+            company=company,
+            defaults={"role": role}
+        )
+
+        if not created:
+            raise ValidationError("Invite already exists")
+
+        # send email async later (Celery)
+        return invite

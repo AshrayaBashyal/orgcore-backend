@@ -24,3 +24,22 @@ class CompanyCreateView(APIView):
         )
 
         return Response({"id": company.id, "name": company.name})
+    
+
+class InviteCreateVew(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, company_id):
+        serializer = InviteCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        company = Company.objects.get(id=company_id)
+
+        invite = CompanyService.invite_member(
+            company=company,
+            inviter=request.user,
+            **serializer.validated_data
+        )
+
+        return Response({"invite_id": invite.id})
+    
